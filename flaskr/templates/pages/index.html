@@ -5,28 +5,159 @@
   <h1 class="text-3xl uppercase">Todos</h1>
 </div>
 
-<table class="border-collapse w-2/3 mx-auto">
-  <thead>
-    <tr>
-      <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400">#</th>
-      <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400">Todo</th>
-    </tr>
-  </thead>
-  <tbody id="todo-results" hx-get="/todos" hx-trigger="load">
-  </tbody>
-</table>
-
-<div class="w-2/3 mx-auto py-10 text-gray-600">
+<!-- Add todo form (outside bulk form to avoid field conflicts) -->
+<div class="w-2/3 mx-auto pb-6 text-gray-600 flex gap-2">
   <input
     type="text"
     name="todo"
     placeholder="e.g. Wash dishes"
-    class="bg-white h-10 px-5 text-2xl focus:outline-none"
+    class="bg-white flex-1 h-10 px-5 text-2xl focus:outline-none border border-green-400 rounded"
     hx-post="/todos/add"
     hx-target="#todo-results"
   >
-  <button class="bg-green-100 text-green-500 hover:bg-green-200 h-10 px-5 text-2xl"
-  hx-post="/todos/add" hx-include="[name='todo']"
-  hx-target="#todo-results">Add</button>
+  <button class="bg-green-100 text-green-500 hover:bg-green-200 h-10 px-5 text-2xl rounded"
+    hx-post="/todos/add" hx-include="[name='todo']"
+    hx-target="#todo-results">Add</button>
 </div>
+
+<!-- Bulk operations form wrapper -->
+<form id="todo-form" onsubmit="return false" class="w-2/3 mx-auto">
+
+  <!-- Action bar (hidden when nothing selected) -->
+  <div id="action-bar" class="hidden mb-4 p-3 bg-green-50 border border-green-300 rounded-lg
+                              flex flex-col sm:flex-row items-center gap-3">
+    <div class="flex items-center gap-2 text-green-800">
+      <span id="selected-count" class="font-semibold">0</span>
+      <span>selected</span>
+      <button type="button" id="clear-selection"
+              class="ml-2 text-sm text-green-600 hover:text-green-800 underline">
+        Clear
+      </button>
+    </div>
+    <div class="flex items-center gap-2 sm:ml-auto">
+      <button type="button"
+        hx-post="/todos/bulk-complete"
+        hx-include="#todo-form"
+        hx-swap="none"
+        class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+        Complete Selected
+      </button>
+      <button type="button"
+        hx-post="/todos/bulk-restore"
+        hx-include="#todo-form"
+        hx-swap="none"
+        class="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600">
+        Restore Selected
+      </button>
+      <button type="button"
+        hx-post="/todos/bulk-delete"
+        hx-include="#todo-form"
+        hx-swap="none"
+        hx-confirm="Are you sure you want to delete the selected todos?"
+        class="px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600">
+        Delete Selected
+      </button>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="border-collapse w-full">
+      <thead>
+        <tr>
+          <th class="p-3 bg-green-200 text-gray-600 border border-green-400 w-12">
+            <input type="checkbox" id="select-all"
+              class="h-4 w-4 text-green-600 border-green-500 rounded focus:ring-green-500">
+          </th>
+          <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400 w-12">#</th>
+          <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400 text-left">Todo</th>
+          <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400 w-24">Status</th>
+          <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400 w-16">Action</th>
+        </tr>
+      </thead>
+      <tbody id="todo-results"
+        hx-get="/todos"
+        hx-trigger="load, todos-updated from:body"
+        hx-swap="innerHTML">
+      </tbody>
+    </table>
+  </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.getElementById('todo-form');
+  var selectAll = document.getElementById('select-all');
+  var actionBar = document.getElementById('action-bar');
+  var countDisplay = document.getElementById('selected-count');
+  var clearBtn = document.getElementById('clear-selection');
+
+  function getChecked() {
+    return form.querySelectorAll('.todo-checkbox:checked');
+  }
+
+  function getAllCheckboxes() {
+    return form.querySelectorAll('.todo-checkbox');
+  }
+
+  function updateUI() {
+    var checked = getChecked();
+    var count = checked.length;
+    countDisplay.textContent = count;
+
+    // Show/hide action bar
+    if (count === 0) {
+      actionBar.classList.add('hidden');
+    } else {
+      actionBar.classList.remove('hidden');
+    }
+
+    // Sync select-all checkbox state
+    var all = getAllCheckboxes();
+    if (all.length === 0) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    } else if (count === all.length) {
+      selectAll.checked = true;
+      selectAll.indeterminate = false;
+    } else if (count > 0) {
+      selectAll.checked = false;
+      selectAll.indeterminate = true;
+    } else {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+  }
+
+  // Individual checkbox changes (event delegation)
+  form.addEventListener('change', function(e) {
+    if (e.target.classList.contains('todo-checkbox')) {
+      updateUI();
+    }
+  });
+
+  // Select all toggle
+  selectAll.addEventListener('change', function() {
+    var checked = selectAll.checked;
+    getAllCheckboxes().forEach(function(cb) { cb.checked = checked; });
+    updateUI();
+  });
+
+  // Clear selection button
+  clearBtn.addEventListener('click', function() {
+    getAllCheckboxes().forEach(function(cb) { cb.checked = false; });
+    selectAll.checked = false;
+    selectAll.indeterminate = false;
+    updateUI();
+  });
+
+  // After HTMX replaces tbody contents, clear selection state
+  document.body.addEventListener('htmx:afterSettle', function(e) {
+    if (e.target.id === 'todo-results') {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+      updateUI();
+    }
+  });
+});
+</script>
 {% endblock %}
