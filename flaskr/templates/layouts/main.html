@@ -7,18 +7,39 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <title>{% block title %}{% endblock %}</title>
-    
+
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
   </head>
   <body class="bg-green-50">
     {% block content %}
     {% endblock content %}
 
-    <script src="https://unpkg.com/htmx.org@1.1.0"></script>
+    <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script>
       document.body.addEventListener('htmx:configRequest', (event) => {
         event.detail.headers['X-CSRFToken'] = '{{ csrf_token() }}';
-      })
+      });
+
+      // Global error handler for HTMX request failures
+      document.body.addEventListener('htmx:responseError', function(evt) {
+        document.getElementById('toast-container').innerHTML =
+          '<div class="px-4 py-3 rounded shadow-lg bg-red-500 text-white text-sm max-w-xs">Something went wrong. Please try again.</div>';
+      });
+
+      // Single-edit enforcement: only one row in edit mode at a time
+      document.body.addEventListener('htmx:afterSwap', function(evt) {
+        var target = evt.detail.target;
+        if (target && target.classList && target.classList.contains('editing')) {
+          document.querySelectorAll('tr.editing').forEach(function(row) {
+            if (row !== target) {
+              var id = row.id.replace('todo-', '');
+              htmx.ajax('GET', '/todos/' + id + '/display', '#' + row.id);
+            }
+          });
+        }
+      });
     </script>
   </body>
 </html>
