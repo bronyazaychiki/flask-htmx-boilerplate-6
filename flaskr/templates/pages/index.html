@@ -1,32 +1,129 @@
 {% extends 'layouts/main.html' %}
-{% block title %}Todos{% endblock %}
+{% block title %}Todo Dashboard{% endblock %}
 {% block content %}
-<div class="w-2/3 mx-auto py-10 text-gray-600">
-  <h1 class="text-3xl uppercase">Todos</h1>
+<div class="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+
+  <!-- Page Header -->
+  <header class="mb-8">
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">My Todos</h1>
+    </div>
+    <p class="text-gray-500 text-sm ml-12">Stay on top of your tasks</p>
+  </header>
+
+  <!-- Stats Cards — populated by HTMX oob swap from todos partial -->
+  <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 animate-pulse">
+      <div class="w-11 h-11 rounded-lg bg-gray-200"></div>
+      <div class="flex-1 space-y-2">
+        <div class="h-3 bg-gray-200 rounded w-12"></div>
+        <div class="h-6 bg-gray-200 rounded w-8"></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 animate-pulse">
+      <div class="w-11 h-11 rounded-lg bg-gray-200"></div>
+      <div class="flex-1 space-y-2">
+        <div class="h-3 bg-gray-200 rounded w-12"></div>
+        <div class="h-6 bg-gray-200 rounded w-8"></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 animate-pulse">
+      <div class="w-11 h-11 rounded-lg bg-gray-200"></div>
+      <div class="flex-1 space-y-2">
+        <div class="h-3 bg-gray-200 rounded w-12"></div>
+        <div class="h-6 bg-gray-200 rounded w-8"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Todo Form -->
+  <div class="mb-6">
+    <form
+      hx-post="/todos/add"
+      hx-target="#todo-list"
+      hx-on::after-request="if(event.detail.successful) this.reset()"
+      class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col sm:flex-row gap-3 transition focus-within:ring-2 focus-within:ring-green-400 focus-within:border-green-400"
+    >
+      <div class="flex-1 flex items-center gap-2">
+        <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        <input
+          type="text"
+          name="todo"
+          required
+          placeholder="What do you need to do?"
+          class="w-full px-1 py-2 text-gray-700 bg-transparent focus:outline-none placeholder-gray-400"
+        >
+      </div>
+      <button
+        type="submit"
+        class="bg-green-500 text-white font-medium px-6 py-2.5 rounded-lg
+               hover:bg-green-600 active:bg-green-700
+               disabled:opacity-60 disabled:cursor-not-allowed
+               transition flex items-center justify-center gap-2"
+      >
+        <!-- Spinner shown only while this button's request is in flight -->
+        <svg class="w-4 h-4 animate-spin htmx-indicator" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span>Add</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Todo List -->
+  <section>
+    <div class="flex items-center justify-between mb-3 px-1">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Tasks</h2>
+    </div>
+
+    <div
+      id="todo-list"
+      hx-get="/todos"
+      hx-trigger="load"
+      class="space-y-2"
+    >
+      <!-- Skeleton loading placeholders — replaced by HTMX response -->
+      <div class="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 rounded bg-gray-200"></div>
+          <div class="h-4 bg-gray-200 rounded flex-1"></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 rounded bg-gray-200"></div>
+          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
-<table class="border-collapse w-2/3 mx-auto">
-  <thead>
-    <tr>
-      <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400">#</th>
-      <th class="p-3 font-bold uppercase bg-green-200 text-gray-600 border border-green-400">Todo</th>
-    </tr>
-  </thead>
-  <tbody id="todo-results" hx-get="/todos" hx-trigger="load">
-  </tbody>
-</table>
-
-<div class="w-2/3 mx-auto py-10 text-gray-600">
-  <input
-    type="text"
-    name="todo"
-    placeholder="e.g. Wash dishes"
-    class="bg-white h-10 px-5 text-2xl focus:outline-none"
-    hx-post="/todos/add"
-    hx-target="#todo-results"
-  >
-  <button class="bg-green-100 text-green-500 hover:bg-green-200 h-10 px-5 text-2xl"
-  hx-post="/todos/add" hx-include="[name='todo']"
-  hx-target="#todo-results">Add</button>
+<!-- Error toast -->
+<div id="error-toast" class="fixed top-4 right-4 z-50 hidden animate-slide-down">
+  <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span class="text-sm font-medium">Something went wrong. Please try again.</span>
+  </div>
 </div>
+
+<script>
+  // Show error toast on HTMX response errors
+  document.body.addEventListener('htmx:responseError', function() {
+    var toast = document.getElementById('error-toast');
+    toast.classList.remove('hidden');
+    setTimeout(function() { toast.classList.add('hidden'); }, 3000);
+  });
+</script>
 {% endblock %}

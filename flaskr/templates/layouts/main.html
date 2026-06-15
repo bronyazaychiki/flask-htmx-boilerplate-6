@@ -9,12 +9,35 @@
     <title>{% block title %}{% endblock %}</title>
     
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in { animation: fadeIn .2s ease-out; }
+
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .animate-slide-down { animation: slideDown .25s ease-out; }
+
+      .htmx-indicator { display: none; }
+      .htmx-request .htmx-indicator { display: inline-flex; }
+      .htmx-request.htmx-indicator { display: inline-flex; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .animate-spin { animation: spin .6s linear infinite; }
+
+      /* Hide checkbox native UI but keep it accessible */
+      .sr-checkbox { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    </style>
   </head>
   <body class="bg-green-50">
     {% block content %}
     {% endblock content %}
 
-    <script src="https://unpkg.com/htmx.org@1.1.0"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script>
       document.body.addEventListener('htmx:configRequest', (event) => {
         event.detail.headers['X-CSRFToken'] = '{{ csrf_token() }}';
