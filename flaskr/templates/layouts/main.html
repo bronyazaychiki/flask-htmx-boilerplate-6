@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <title>{% block title %}{% endblock %}</title>
-    
+
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
   </head>
   <body class="bg-green-50">
@@ -16,9 +16,57 @@
 
     <script src="https://unpkg.com/htmx.org@1.1.0"></script>
     <script>
+      // CSRF token for all HTMX requests
       document.body.addEventListener('htmx:configRequest', (event) => {
         event.detail.headers['X-CSRFToken'] = '{{ csrf_token() }}';
-      })
+      });
+
+      // After any HTMX swap into #todo-list, sync tab counts and active styling
+      document.addEventListener('htmx:afterSwap', function(evt) {
+        var target = evt.detail && evt.detail.target;
+        if (!target) return;
+        if (target.id === 'todo-list' || target.closest('#todo-list')) {
+          var data = document.getElementById('tab-counts');
+          if (!data) return;
+
+          var counts = {
+            all: data.dataset.countAll,
+            pending: data.dataset.countPending,
+            completed: data.dataset.countCompleted
+          };
+          var active = data.dataset.active;
+
+          // Update count badges
+          ['all', 'pending', 'completed'].forEach(function(s) {
+            var btn = document.querySelector('[data-tab="' + s + '"]');
+            if (!btn) return;
+            var badge = btn.querySelector('.tab-count');
+            if (badge) badge.textContent = counts[s];
+
+            if (s === active) {
+              btn.className = 'px-4 py-2 rounded text-sm font-medium border border-green-300 bg-green-200 text-green-800';
+            } else {
+              btn.className = 'px-4 py-2 rounded text-sm font-medium border border-green-300 bg-white text-gray-600 hover:bg-green-50';
+            }
+          });
+
+          // Sync hidden _status inputs so search and add compose with active filter
+          document.querySelectorAll('[name="_status"]').forEach(function(el) {
+            el.value = active;
+          });
+        }
+      });
+
+      // Escape in search box clears it and resets to "All"
+      document.addEventListener('keyup', function(evt) {
+        if (evt.key === 'Escape' && evt.target.name === 'search') {
+          if (evt.target.value !== '') {
+            evt.target.value = '';
+          }
+          var allBtn = document.getElementById('tab-all');
+          if (allBtn) allBtn.click();
+        }
+      });
     </script>
   </body>
 </html>

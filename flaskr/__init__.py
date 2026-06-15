@@ -8,6 +8,7 @@ def create_app(test_config=None):
 
     app = Flask(__name__)
     app.config.from_object('config')
+    app.url_map.strict_slashes = False
     csrf.init_app(app)
 
     @app.route('/')
